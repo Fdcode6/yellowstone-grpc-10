@@ -19,4 +19,3 @@ Output data explanation:
 First column: signature - Transaction signature
 Second column: mint - Trading pair mint
 Third column: price for sol
-
