@@ -41,7 +41,7 @@ async function main() {
     const request: SubscribeRequest = {
         accounts: {
             txn: {
-                account: ["675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"],
+                account: ["8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj"],
                 owner: ["CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"],
                 filters: [],
                 nonemptyTxnSignature: true,
