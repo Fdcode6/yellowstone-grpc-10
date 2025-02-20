@@ -6,7 +6,7 @@ async function main() {
     // 创建client
     // @ts-ignore
     const client = new Client.default(
-        "https://test-grpc.chainbuff.com",
+        "https://solana-yellowstone-grpc.publicnode.com",
         undefined,
         {
             "grpc.max_receive_message_length": 128 * 1024 * 1024, // 128MB
@@ -41,7 +41,7 @@ async function main() {
     const request: SubscribeRequest = {
         accounts: {
             txn: {
-                account: ["8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj"],
+                account: ["675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"],
                 owner: ["CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"],
                 filters: [],
                 nonemptyTxnSignature: true,

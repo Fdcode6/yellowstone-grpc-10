@@ -1,5 +1,6 @@
 import Client, { CommitmentLevel, SubscribeRequest } from "@triton-one/yellowstone-grpc";
 import bs58 from "bs58";
+import BN from "bn.js";
 
 const PUMP_FUN_PROGRAM_ID = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const GRPC_URL = "https://solana-yellowstone-grpc.publicnode.com";
@@ -21,14 +22,119 @@ type PumpPriceInfo = {
     swapSolAmount: number;
 }
 
-class PumpSwapSubscriber {
+class SolPriceSubscriber {
+    private callback: (solPrice: number) => void;
+    private client: any;
+    private stream: any;
 
+    constructor(callback: (solPrice: number) => void) {
+        this.callback = callback;
+    }
+
+    async listen() {
+        this.client = new Client.default(
+            GRPC_URL,
+            undefined,
+            {
+                "grpc.max_receive_message_length": 128 * 1024 * 1024, // 128MB
+            }
+        );
+        console.log("Subscribing to SOL price stream...");
+
+        this.stream = await this.client.subscribe();
+
+        const request: SubscribeRequest = {
+            accounts: {
+                txn: {
+                    account: ["8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj"],
+                    owner: ["CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"],
+                    filters: [],
+                    nonemptyTxnSignature: true,
+                }
+            },
+            slots: {},
+            transactions: {},
+            transactionsStatus: {},
+            blocks: {},
+            blocksMeta: {},
+            entry: {},
+            accountsDataSlice: [ { offset: "253", length: "16" } ],
+            commitment: CommitmentLevel.PROCESSED,
+            ping: undefined,
+        };
+
+        await new Promise<void>((resolve, reject) => {
+            this.stream.write(request, (err) => {
+                if (err === null || err === undefined) {
+                    resolve();
+                } else {
+                    reject(err);
+                }
+            });
+        }).catch((reason) => {
+            console.error(reason);
+            throw reason;
+        });
+
+        this.stream.on("data", async (data) => {
+            if (data.account) {
+                const sqrtPriceX64Value = new BN(data.account.account.data, 'le');
+                console.log(`sqrtPriceX64Value`, sqrtPriceX64Value.toString());
+                const sqrtPriceX64BigInt = BigInt(sqrtPriceX64Value.toString());
+                const sqrtPriceX64Float = Number(sqrtPriceX64BigInt) / (2 ** 64);
+                const price = sqrtPriceX64Float ** 2 * 1e9 / 1e6;
+                console.log(`WSOL价格:`, price.toString());
+                console.log('---\n');
+                this.callback(price);
+            }
+        });
+
+        this.startPing();
+    }
+
+    private startPing() {
+        const pingRequest: SubscribeRequest = {
+            accounts: {},
+            slots: {},
+            transactions: {},
+            transactionsStatus: {},
+            blocks: {},
+            blocksMeta: {},
+            entry: {},
+            accountsDataSlice: [],
+            commitment: undefined,
+            ping: { id: 1 },
+        };
+
+        setInterval(async () => {
+            await new Promise<void>((resolve, reject) => {
+                this.stream.write(pingRequest, (err) => {
+                    if (err === null || err === undefined) {
+                        resolve();
+                    } else {
+                        reject(err);
+                    }
+                });
+            }).catch((reason) => {
+                console.error(reason);
+                throw reason;
+            });
+        }, 5000);
+    }
+}
+
+class PumpSwapSubscriber {
     private bondingCurveSet: Set<string>;
     private callback: (data: PumpPriceInfo) => void;
+    private currentSolPrice: number = 0;
 
     constructor(bondingCurveArr: Array<string>, callback: (data: PumpPriceInfo) => void) {
         this.bondingCurveSet = new Set(bondingCurveArr);
         this.callback = callback;
+    }
+
+    updateSolPrice(price: number) {
+        this.currentSolPrice = price;
     }
 
     async listen() {
@@ -39,9 +145,8 @@ class PumpSwapSubscriber {
                 "grpc.max_receive_message_length": 128 * 1024 * 1024, // 128MB
             }
         );
-        console.log("Subscribing to event stream...");
+        console.log("Subscribing to pump swap stream...");
 
-        // 创建订阅数据流
         const stream = await client.subscribe();
 
         const request: SubscribeRequest = {
@@ -65,7 +170,6 @@ class PumpSwapSubscriber {
             blocksMeta: {},
         };
 
-        // 发送订阅请求
         await new Promise<void>((resolve, reject) => {
             stream.write(request, (err) => {
                 if (err === null || err === undefined) {
@@ -79,14 +183,12 @@ class PumpSwapSubscriber {
             throw reason;
         });
 
-        // 获取订阅数据
         stream.on("data", async (data) => {
             if (data?.transaction) {
                 this.checkPrice(data.transaction);
             }
         });
 
-        // 为保证连接稳定，需要定期向服务端发送ping请求以维持连接
         const pingRequest: SubscribeRequest = {
             accounts: {},
             slots: {},
@@ -99,7 +201,7 @@ class PumpSwapSubscriber {
             commitment: undefined,
             ping: { id: 1 },
         };
-        // 每5秒发送一次ping请求
+
         setInterval(async () => {
             await new Promise<void>((resolve, reject) => {
                 stream.write(pingRequest, (err) => {
@@ -121,7 +223,6 @@ class PumpSwapSubscriber {
         if (!transaction) {
             return;
         }
-        // 将accountKeys编码成base58
         const accountKeys = transaction?.transaction?.message?.accountKeys?.map(o=>bs58.encode(o));
         if (!accountKeys) {
             return;
@@ -129,31 +230,26 @@ class PumpSwapSubscriber {
         transaction.transaction.message.accountKeys = accountKeys;
         const signature = bs58.encode(txn.transaction.signature);
         const pumpProgramIdx = accountKeys.indexOf(PUMP_FUN_PROGRAM_ID);
-        // 获取该交易的bondingCurve
         const txBondingCurves = accountKeys.filter(item=>this.bondingCurveSet.has(item))
 
-        // 判断是否为launch(Instruction中programId为pump且data的第一个字节等于183)
         const isLaunch = txn?.transaction?.transaction?.message?.instructions
             .some(item=>item.programIdIndex===pumpProgramIdx && item.data[0] === 183) ?? false;
         if (isLaunch) {
+            const priceInfo = this.getPumpSwapInfo(txn, txBondingCurves[0], "pre");
             this.callback({
                 signature: signature,
                 type: "launch",
                 bondingCurve: txBondingCurves[0],
                 progress: 1,
-                // 由于该交易为launch，bondingCurve中的余额已被提取，因此拿pre的余额作价格
-                price: this.getPumpSwapInfo(txn, txBondingCurves[0], "pre")?.price ?? 0,
-                usdPrice: (this.getPumpSwapInfo(txn, txBondingCurves[0], "pre")?.price ?? 0) * 172.87,
+                price: priceInfo?.price ?? 0,
+                usdPrice: (priceInfo?.price ?? 0) * this.currentSolPrice,
                 swapSolAmount: 0,
             })
             return;
         }
-        // 分析价格等信息
-        // 一笔交易可能包含多个token的买入或卖出，为避免遗漏遍历所有符合的bondingCurve
+
         for (let bondingCurveItem of txBondingCurves) {
-            // 获取交易后的价格
             const pumpPriceInfo = this.getPumpSwapInfo(txn, bondingCurveItem, "post");
-            // 增加健壮性，理论上不会进入这里
             if (!pumpPriceInfo) {
                 console.log('balance not found:', signature);
                 continue;
@@ -164,21 +260,17 @@ class PumpSwapSubscriber {
                 bondingCurve: bondingCurveItem,
                 progress: pumpPriceInfo.progress,
                 price: pumpPriceInfo.price,
-                usdPrice: pumpPriceInfo.price * 172.87,
+                usdPrice: pumpPriceInfo.price * this.currentSolPrice,
                 swapSolAmount: pumpPriceInfo.swapSolAmount
             })
         }
-
     }
 
-
     getPumpSwapInfo(txn: any, bondingCurve: string, type: "pre" | "post") {
-        // 获取bondingCurve的token余额
         const tokenBalance = txn?.transaction?.meta?.[type + 'TokenBalances']?.find(o=>o.owner===bondingCurve);
         if (!tokenBalance) {
             return null;
         }
-        // 获取bondingCurve的sol余额
         const bondingCurveIdx = txn.transaction.transaction.message.accountKeys.indexOf(bondingCurve);
         let preSolBalance = txn.transaction.meta?.preBalances?.[bondingCurveIdx];
         let postSolBalance = txn.transaction.meta?.postBalances?.[bondingCurveIdx];
@@ -186,7 +278,6 @@ class PumpSwapSubscriber {
         if (postSolBalance===undefined || preSolBalance === undefined) {
             return null;
         }
-        // 通过余额反推虚拟余额，virtualSolReserves(sol余额+30-租金)和virtualTokenReserves(token余额+73000000)
         const price = ((Number(targetSolBalance) / (10 ** 9)) + 30 - 0.00123192) / (tokenBalance.uiTokenAmount.uiAmount + 73000000);
         const swapSolAmount = (Number(postSolBalance) - Number(preSolBalance)) / (10 ** 9);
         const progress = Number(postSolBalance) / (10 ** 9) / 85;
@@ -195,14 +286,23 @@ class PumpSwapSubscriber {
 }
 
 async function main() {
-    new PumpSwapSubscriber(
-        // 订阅bondingCurve 支持订阅多个
+    const pumpSwapSubscriber = new PumpSwapSubscriber(
         ['2Ao4rrHxMn1Raex9S87xDtY2ngSqcoFoFcZcK64bGf2y'],
         o => {
             const now = new Date();
             console.log(`[${now.toISOString()}]`, o);
         }
-    ).listen();
+    );
+
+    const solPriceSubscriber = new SolPriceSubscriber((solPrice) => {
+        console.log(`[${new Date().toISOString()}] SOL Price: $${solPrice}`);
+        pumpSwapSubscriber.updateSolPrice(solPrice);
+    });
+
+    await Promise.all([
+        solPriceSubscriber.listen(),
+        pumpSwapSubscriber.listen()
+    ]);
 }
 
 main();
