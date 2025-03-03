@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana 钱包分析器</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Solana 钱包分析器</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">总钱包数:</span>
+                    <span class="stat-value"><%= totalWallets %></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">平均评分:</span>
+                    <span class="stat-value"><%= averageScore.toFixed(2) %></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">平均代币数:</span>
+                    <span class="stat-value"><%= averageTokenCount.toFixed(0) %></span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="search-container">
+            <form action="/" method="GET">
+                <input type="text" name="search" placeholder="搜索钱包地址..." value="<%= search %>">
+                <button type="submit">搜索</button>
+            </form>
+            <div class="export-buttons">
+                <button id="exportBtn" class="export-btn"><i class="fas fa-download"></i> 导出当前表格</button>
+                <a href="/export-all" class="export-btn export-all-btn"><i class="fas fa-database"></i> 导出所有数据</a>
+                <button id="clearDbBtn" class="export-btn clear-db-btn"><i class="fas fa-trash-alt"></i> 清空数据库</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="wallet-table" id="walletTable">
+                <thead>
+                    <tr>
+                        <% tableHeaders.forEach(header => { %>
+                            <th class="sortable" data-sort="<%= header.id %>">
+                                <%= header.label %> 
+                                <span class="sort-icon">
+                                    <i class="fas fa-sort"></i>
+                                </span>
+                            </th>
+                        <% }); %>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% wallets.forEach(wallet => { %>
+                        <tr>
+                            <td class="address-cell">
+                                <a href="https://gmgn.ai/sol/address/<%= wallet.address %>" target="_blank" class="wallet-link">
+                                    <%= wallet.address %>
+                                </a>
+                            </td>
+                            <td><%= wallet.total_score ? wallet.total_score.toFixed(2) : 'N/A' %></td>
+                            <td><%= wallet.token_count || 'N/A' %></td>
+                            <td><%= wallet.win_rate ? wallet.win_rate.toFixed(1) : 'N/A' %></td>
+                            <td><%= wallet.profit_7d ? wallet.profit_7d.toLocaleString() : 'N/A' %></td>
+                            <td><%= wallet.profit_30d ? wallet.profit_30d.toLocaleString() : 'N/A' %></td>
+                            <td><%= wallet.last_updated ? (wallet.high_profit_tokens_count || 0) : 'N/A' %></td>
+                            <td><%= wallet.last_updated ? (wallet.scam_tokens_count || 0) : 'N/A' %></td>
+                            <td><%= wallet.trade_count_7d || 'N/A' %></td>
+                            <td><%= wallet.trade_count_30d || 'N/A' %></td>
+                            <td><%= wallet.avg_holding_time ? wallet.avg_holding_time.toFixed(1) : 'N/A' %></td>
+                            <td><%= wallet.fast_tx_ratio ? wallet.fast_tx_ratio.toFixed(1) : 'N/A' %></td>
+                            <td><%= wallet.no_buy_hold_ratio ? wallet.no_buy_hold_ratio.toFixed(1) : 'N/A' %></td>
+                            <td><%= wallet.last_updated ? new Date(wallet.last_updated).toLocaleString() : 'N/A' %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination">
+            <% if (totalPages > 1) { %>
+                <% if (page > 1) { %>
+                    <a href="/?page=<%= page - 1 %><%= search ? '&search=' + search : '' %>" class="page-link">&laquo; 上一页</a>
+                <% } %>
+                
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                    <% if (i === page) { %>
+                        <span class="page-link active"><%= i %></span>
+                    <% } else if (i <= 3 || i >= totalPages - 2 || (i >= page - 1 && i <= page + 1)) { %>
+                        <a href="/?page=<%= i %><%= search ? '&search=' + search : '' %>" class="page-link"><%= i %></a>
+                    <% } else if (i === 4 || i === totalPages - 3) { %>
+                        <span class="page-link dots">...</span>
+                    <% } %>
+                <% } %>
+                
+                <% if (page < totalPages) { %>
+                    <a href="/?page=<%= page + 1 %><%= search ? '&search=' + search : '' %>" class="page-link">下一页 &raquo;</a>
+                <% } %>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- 表格排序和导出功能的脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 表格排序功能
+            const table = document.getElementById('walletTable');
+            const headers = table.querySelectorAll('th.sortable');
+            let currentSort = { column: null, direction: 'asc' };
+
+            headers.forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.getAttribute('data-sort');
+                    const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    
+                    // 重置所有排序图标
+                    headers.forEach(h => {
+                        const icon = h.querySelector('.sort-icon i');
+                        icon.className = 'fas fa-sort';
+                    });
+                    
+                    // 设置当前排序图标
+                    const icon = this.querySelector('.sort-icon i');
+                    icon.className = direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                    
+                    // 排序表格
+                    sortTable(column, direction);
+                    
+                    // 更新当前排序状态
+                    currentSort = { column, direction };
+                });
+            });
+
+            function sortTable(column, direction) {
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // 根据列和方向排序行
+                const sortedRows = rows.sort((a, b) => {
+                    const aValue = getCellValue(a, getColumnIndex(column));
+                    const bValue = getCellValue(b, getColumnIndex(column));
+                    
+                    if (column === 'address') {
+                        return direction === 'asc' 
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                    } else {
+                        // 尝试数字比较
+                        const aNum = parseFloat(aValue.replace(/,/g, ''));
+                        const bNum = parseFloat(bValue.replace(/,/g, ''));
+                        
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return direction === 'asc' ? aNum - bNum : bNum - aNum;
+                        } else {
+                            // 如果不是数字，按字符串比较
+                            return direction === 'asc' 
+                                ? aValue.localeCompare(bValue)
+                                : bValue.localeCompare(aValue);
+                        }
+                    }
+                });
+                
+                // 清空表格并添加排序后的行
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                
+                sortedRows.forEach(row => {
+                    tbody.appendChild(row);
+                });
+            }
+            
+            function getCellValue(row, index) {
+                const cell = row.cells[index];
+                // 如果是地址单元格，获取链接内的文本
+                if (cell.classList.contains('address-cell')) {
+                    return cell.querySelector('a').textContent.trim();
+                }
+                return cell.textContent.trim() || '';
+            }
+            
+            function getColumnIndex(columnId) {
+                const headers = Array.from(table.querySelectorAll('th'));
+                return headers.findIndex(header => header.getAttribute('data-sort') === columnId);
+            }
+            
+            // 导出表格功能
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                exportTableToCSV('solana_wallets.csv');
+            });
+            
+            function exportTableToCSV(filename) {
+                const rows = [];
+                const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+                
+                // 添加表头
+                rows.push(headers.join(','));
+                
+                // 添加表格数据
+                const tableRows = table.querySelectorAll('tbody tr');
+                tableRows.forEach(row => {
+                    const rowData = [];
+                    row.querySelectorAll('td').forEach((cell, index) => {
+                        let value;
+                        if (index === 0) { // 地址列
+                            value = cell.querySelector('a').textContent.trim();
+                        } else {
+                            value = cell.textContent.trim();
+                        }
+                        // 处理包含逗号的值
+                        if (value.includes(',')) {
+                            value = `"${value}"`;
+                        }
+                        rowData.push(value);
+                    });
+                    rows.push(rowData.join(','));
+                });
+                
+                // 创建CSV内容
+                const csvContent = rows.join('\n');
+                
+                // 创建下载链接
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // 清空数据库功能
+            document.getElementById('clearDbBtn').addEventListener('click', function() {
+                if (confirm('警告：此操作将清空所有钱包和交易数据，且无法恢复！确定要继续吗？')) {
+                    // 创建一个表单并提交
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/clear-database';
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+            
+            // 显示清空成功消息
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cleared') === 'true') {
+                alert('数据库已成功清空！');
+                // 移除URL参数
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        });
+    </script>
+</body>
+</html> 

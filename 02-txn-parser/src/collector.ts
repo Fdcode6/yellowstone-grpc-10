@@ -2,6 +2,7 @@ import Client, { CommitmentLevel, SubscribeRequest } from "@triton-one/yellowsto
 import bs58 from "bs58";
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import path from 'path';
 
 // 定义常量
 const PUMP_FUN_PROGRAM_ID = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
@@ -9,7 +10,7 @@ const SOL_DECIMALS = 9; // SOL的小数位数
 
 // 配置参数
 const MIN_SOL_AMOUNT = 0.3; // 最小SOL交易金额阈值，只有超过这个金额的交易才会被打印
-const DB_PATH = './wallet_data.db'; // 数据库路径
+const DB_PATH = path.join(__dirname, '../wallet_data.db'); // 数据库路径
 
 // 统计数据
 const uniqueWallets = new Set<string>(); // 用于存储唯一的钱包地址
@@ -72,11 +73,22 @@ async function initDatabase() {
             buy_sell_ratio REAL,
             honeypot_ratio REAL,
             fast_tx_ratio REAL,
-            no_buy_hold_ratio REAL
+            no_buy_hold_ratio REAL,
+            last_updated INTEGER
         )
     `);
     
-    console.log("数据库初始化完成");
+    // 从数据库中获取已有的钱包地址数量
+    const result = await db.get('SELECT COUNT(*) as count FROM wallets');
+    walletCounter = result.count;
+    
+    // 从数据库中加载所有钱包地址到 uniqueWallets 集合
+    const wallets = await db.all('SELECT address FROM wallets');
+    wallets.forEach((wallet: any) => {
+        uniqueWallets.add(wallet.address);
+    });
+    
+    console.log(`数据库初始化完成，已加载 ${walletCounter} 个钱包地址`);
     return db;
 }
 
@@ -85,10 +97,9 @@ async function main() {
     await initDatabase();
 
     // 创建client
-    // @ts-ignore
-    const client = new Client.default(
+    const client = new Client(
         "https://solana-yellowstone-grpc.publicnode.com",
-        undefined,
+        "",
         {
             "grpc.max_receive_message_length": 128 * 1024 * 1024, // 128MB
         }
@@ -124,7 +135,7 @@ async function main() {
 
     // 发送订阅请求
     await new Promise<void>((resolve, reject) => {
-        stream.write(request, (err) => {
+        stream.write(request, (err: any) => {
             if (err === null || err === undefined) {
                 resolve();
             } else {
@@ -137,7 +148,7 @@ async function main() {
     });
 
     // 获取订阅数据
-    stream.on("data", async (data) => {
+    stream.on("data", async (data: any) => {
         if (data.transaction) {
             try {
                 // 解析交易信息
@@ -201,7 +212,7 @@ async function main() {
     // 每5秒发送一次ping请求
     setInterval(async () => {
         await new Promise<void>((resolve, reject) => {
-            stream.write(pingRequest, (err) => {
+            stream.write(pingRequest, (err: any) => {
                 if (err === null || err === undefined) {
                     resolve();
                 } else {
@@ -261,7 +272,7 @@ function parseTransaction(txn: any): TransactionInfo {
         const txnSignature = bs58.encode(transaction.signatures[0]);
         
         // 解析交易涉及的账户
-        const accountKeys = transaction.message.accountKeys.map(ak => bs58.encode(ak));
+        const accountKeys = transaction.message.accountKeys.map((ak: any) => bs58.encode(ak));
         
         // 解析交易指令
         const instructions = transaction.message.instructions;
@@ -323,7 +334,7 @@ function parsePumpTransaction(txn: any, txInfo: TransactionInfo, pumpProgramIdx:
         
         // 检查是否为launch交易
         const isLaunch = transaction.message.instructions
-            .some(item => item.programIdIndex === pumpProgramIdx && item.data && item.data[0] === 183);
+            .some((item: any) => item.programIdIndex === pumpProgramIdx && item.data && item.data[0] === 183);
         
         if (isLaunch) {
             txInfo.type = 'unknown'; // launch交易特殊处理
@@ -361,7 +372,7 @@ function parsePumpTransaction(txn: any, txInfo: TransactionInfo, pumpProgramIdx:
         for (const postToken of postTokenBalances) {
             if (!postToken || !postToken.uiTokenAmount) continue;
             
-            const preToken = preTokenBalances.find(t => 
+            const preToken = preTokenBalances.find((t: any) => 
                 t && t.accountIndex === postToken.accountIndex && t.mint === postToken.mint
             );
             

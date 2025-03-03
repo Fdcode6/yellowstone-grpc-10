@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钱包详情 - <%= wallet.address %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="wallet-header">
+            <div class="header-left">
+                <a href="/" class="back-btn">返回列表</a>
+                <h1>钱包详情</h1>
+            </div>
+            <div class="wallet-address-container">
+                <span class="wallet-address"><%= wallet.address %></span>
+                <div class="explorer-links">
+                    <a href="https://solscan.io/account/<%= wallet.address %>" target="_blank" class="explorer-link">
+                        <i class="fas fa-external-link-alt"></i> Solscan
+                    </a>
+                    <a href="https://gmgn.ai/sol/address/<%= wallet.address %>" target="_blank" class="explorer-link">
+                        <i class="fas fa-external-link-alt"></i> GMGN.AI
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="wallet-overview">
+            <div class="score-card">
+                <div class="score-value"><%= wallet.total_score.toFixed(2) %></div>
+                <div class="score-label">总评分</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-group">
+                    <h3>交易能力</h3>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-label">胜率</div>
+                            <div class="stat-value"><%= wallet.win_rate.toFixed(2) %>%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">7天盈利</div>
+                            <div class="stat-value">$<%= wallet.profit_7d.toFixed(2) %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">30天盈利</div>
+                            <div class="stat-value">$<%= wallet.profit_30d.toFixed(2) %></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-label">高盈利代币</div>
+                            <div class="stat-value"><%= wallet.last_updated ? (wallet.high_profit_tokens_count || 0) : 'N/A' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">诈骗代币</div>
+                            <div class="stat-value"><%= wallet.last_updated ? (wallet.scam_tokens_count || 0) : 'N/A' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">代币总数</div>
+                            <div class="stat-value"><%= wallet.token_count || 'N/A' %></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-group">
+                    <h3>交易风格</h3>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-label">7天交易数</div>
+                            <div class="stat-value"><%= wallet.trade_count_7d %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">30天交易数</div>
+                            <div class="stat-value"><%= wallet.trade_count_30d %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">平均持仓时间</div>
+                            <div class="stat-value"><%= wallet.avg_holding_time.toFixed(2) %>小时</div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-label">买卖比例</div>
+                            <div class="stat-value"><%= wallet.buy_sell_ratio ? wallet.buy_sell_ratio.toFixed(2) : 'N/A' %></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-group">
+                    <h3>风险控制</h3>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-label">蜜罐比例</div>
+                            <div class="stat-value"><%= wallet.honeypot_ratio ? (wallet.honeypot_ratio * 100).toFixed(2) : 0 %>%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">快速交易风险</div>
+                            <div class="stat-value"><%= wallet.fast_tx_ratio ? (wallet.fast_tx_ratio * 100).toFixed(2) : 0 %>%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">无买入持仓风险</div>
+                            <div class="stat-value"><%= wallet.no_buy_hold_ratio ? (wallet.no_buy_hold_ratio * 100).toFixed(2) : 0 %>%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="transactions-section">
+            <h2>最近交易记录</h2>
+            <% if (transactions && transactions.length > 0) { %>
+                <div class="table-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>交易签名</th>
+                                <th>类型</th>
+                                <th>代币地址</th>
+                                <th>SOL 金额</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% transactions.forEach(tx => { %>
+                                <tr>
+                                    <td class="tx-signature">
+                                        <a href="https://solscan.io/tx/<%= tx.signature %>" target="_blank" class="tx-link">
+                                            <%= tx.signature.substring(0, 10) %>...
+                                        </a>
+                                    </td>
+                                    <td class="<%= tx.type.toLowerCase() %>-type"><%= tx.type %></td>
+                                    <td>
+                                        <a href="https://solscan.io/token/<%= tx.token_address %>" target="_blank" class="token-link">
+                                            <%= tx.token_address.substring(0, 8) %>...
+                                        </a>
+                                    </td>
+                                    <td><%= tx.sol_amount.toFixed(4) %> SOL</td>
+                                    <td><%= new Date(tx.timestamp * 1000).toLocaleString() %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="no-transactions">
+                    <p>暂无交易记录</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html> 

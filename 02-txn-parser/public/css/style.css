@@ -1,0 +1,506 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部样式 */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+h1 {
+    color: #2563eb;
+    font-size: 28px;
+}
+
+.stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-item {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 12px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6b7280;
+    margin-right: 8px;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* 搜索框样式 */
+.search-container {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-container form {
+    display: flex;
+    max-width: 500px;
+}
+
+.search-container input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px 0 0 6px;
+    font-size: 16px;
+}
+
+.search-container button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.search-container button:hover {
+    background-color: #1d4ed8;
+}
+
+/* 导出按钮样式 */
+.export-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.export-btn {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.export-btn:hover {
+    background-color: #059669;
+}
+
+.export-all-btn {
+    background-color: #6366f1;
+}
+
+.export-all-btn:hover {
+    background-color: #4f46e5;
+}
+
+.clear-db-btn {
+    background-color: #ef4444;
+}
+
+.clear-db-btn:hover {
+    background-color: #dc2626;
+}
+
+.export-btn i {
+    font-size: 14px;
+}
+
+/* 表格样式 */
+.table-container {
+    overflow-x: auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.wallet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.wallet-table th {
+    background-color: #f3f4f6;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #4b5563;
+    position: sticky;
+    top: 0;
+}
+
+/* 可排序表头样式 */
+.wallet-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 25px;
+}
+
+.wallet-table th.sortable:hover {
+    background-color: #e5e7eb;
+}
+
+.sort-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+.wallet-table td {
+    padding: 12px 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.wallet-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.address-cell {
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.wallet-link {
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.wallet-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* 分页样式 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 5px;
+}
+
+.page-link {
+    display: inline-block;
+    padding: 8px 12px;
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background-color: #f3f4f6;
+}
+
+.page-link.active {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.page-link.dots {
+    border: none;
+    background: none;
+    padding: 8px 5px;
+}
+
+/* 钱包详情页样式 */
+.wallet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.back-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #2563eb;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #1d4ed8;
+}
+
+.wallet-address-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.wallet-address {
+    font-family: monospace;
+    font-size: 14px;
+    background-color: #f3f4f6;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #4b5563;
+}
+
+.explorer-links {
+    display: flex;
+    gap: 10px;
+}
+
+.explorer-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #f3f4f6;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.explorer-link:hover {
+    color: #1d4ed8;
+    background-color: #e5e7eb;
+}
+
+.explorer-link i {
+    font-size: 12px;
+}
+
+.wallet-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.score-card {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.score-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 10px;
+}
+
+.score-label {
+    font-size: 16px;
+    color: #6b7280;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.stat-group {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.stat-group h3 {
+    font-size: 18px;
+    color: #4b5563;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.stat-row:last-child {
+    margin-bottom: 0;
+}
+
+.stat-row .stat-item {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
+.transactions-section {
+    margin-top: 40px;
+}
+
+.transactions-section h2 {
+    font-size: 24px;
+    color: #2563eb;
+    margin-bottom: 20px;
+}
+
+.transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.transaction-table th {
+    background-color: #f3f4f6;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #4b5563;
+    position: sticky;
+    top: 0;
+}
+
+.transaction-table td {
+    padding: 12px 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.transaction-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.tx-signature {
+    font-family: monospace;
+}
+
+.tx-link, .token-link {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.tx-link:hover, .token-link:hover {
+    text-decoration: underline;
+}
+
+.buy-type {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.sell-type {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.no-transactions {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    color: #6b7280;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .search-container form {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .export-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .wallet-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .wallet-address-container {
+        margin-top: 15px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .explorer-links {
+        margin-top: 10px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-row {
+        flex-direction: column;
+    }
+} 
