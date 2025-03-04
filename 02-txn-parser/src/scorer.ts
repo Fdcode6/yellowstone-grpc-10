@@ -8,7 +8,10 @@ const API_URL = 'http://localhost:8080/api/wallet_score?wallet='; // 钱包评�
 const DB_PATH = path.join(__dirname, '../wallet_data.db'); // 数据库路径
 const QUERY_INTERVAL = 5000; // 查询间隔（毫秒）
 const RECHECK_INTERVAL = 60000; // 重新检查数据库间隔（毫秒）
-const UPDATE_THRESHOLD = 86400000; // 更新阈值（毫秒），24小时
+
+// 更新阈值配置
+const UPDATE_DAYS = 30; // 设置多少天更新一次，可以根据需要修改这个值
+const UPDATE_THRESHOLD = UPDATE_DAYS * 24 * 60 * 60 * 1000; // 更新阈值（毫秒）
 
 // 数据库连接
 let db: any;
